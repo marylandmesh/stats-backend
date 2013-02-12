@@ -1,7 +1,15 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+)
+
+// Server errors, both to be reported to the admin and to the
+// connecting user.
+var (
+	ErrNoID = errors.New("no id presented")
 )
 
 func serve(iface, port string) (err error) {
@@ -16,5 +24,15 @@ func handlePickup(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDelivery(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Delivery, gov'ner?"))
+	// Retrieve the ID from the form, and abort if it's not given.
+	id := r.FormValue("id")
+	if len(id) == 0 {
+		l.Printf("Delivery from %s aborted: %s", r.RemoteAddr, ErrNoID)
+		http.Error(w, ErrNoID.Error(), http.StatusBadRequest)
+		return
+	}
+
+	l.Printf("Getting delivery from %s, %q",
+		r.RemoteAddr, r.FormValue("id"))
+	fmt.Fprintf(w, "Got %s\n", r.FormValue("body"))
 }
